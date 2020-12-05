@@ -26,6 +26,9 @@ def pdf2png(config, filePath, outDir=False, *, cleanUp=True):
     """
     taskid = str(uuid.uuid4())
 
+    if not outDir:
+        outDir = os.getcwd()
+
     tempPath = os.path.join(outDir, taskid)
     os.mkdir(tempPath)
 

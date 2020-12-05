@@ -16,7 +16,7 @@ config = {
 
 @click.group()
 @click.option('--debug', '-d', 'debug', default=False,
-            description="Activate debugging flag")
+              help="Activate debugging flag")
 def run(debug):
     if debug:
         logger.setLevel(logging.getLevelName('DEBUG'))
@@ -25,9 +25,9 @@ def run(debug):
 
 @run.command()
 @click.option('--file', '-f', 'fileIn', default="",
-            description="Input image-PDF file")
+              help="Input image-PDF file")
 @click.option('--out-dir', '-o', 'outDir', default="",
-            description="Root directory for temp directory")
+              help="Root directory for temp directory")
 def extract(fileIn, outDir):
     """
     EXTRACT
@@ -45,7 +45,7 @@ def extract(fileIn, outDir):
 
 @run.command()
 @click.option('--dir', '-d', 'directory', default="",
-            description="Directory with image files")
+              help="Directory with image files")
 def ocr(directory):
     """
     OCR
@@ -63,6 +63,34 @@ def ocr(directory):
 
     loop = asyncio.get_event_loop()
     [result] = loop.run_until_complete(asyncio.gather(pgt.process(payload)))
+    sys.stdout.write(pgt.outputParse(result))
+
+
+@run.command()
+@click.option('--file', '-f', 'fileIn', default="",
+              help="Input image-PDF file")
+def process(fileIn):
+    """
+    PARSE
+    Parse Image PDF file, output resulting text.
+    (combines Extract and Ocr commands)
+    """
+
+    dirPath = os.path.dirname(os.path.realpath(__file__))
+    filePath = os.path.join(dirPath, fileIn)
+    outDir = os.getcwd()
+
+    with pgt.pdf2png(config, filePath, outDir) as (taskid, path):
+
+        payload = []
+        for fname in os.listdir(path):
+            order = int(fname[3:5])
+            fpath = os.path.join(path, fname)
+            payload.append((order, fpath))
+
+        loop = asyncio.get_event_loop()
+        [result] = loop.run_until_complete(asyncio.gather(pgt.process(payload)))
+
     sys.stdout.write(pgt.outputParse(result))
 
 
