@@ -15,28 +15,43 @@ config = {
 
 
 @click.group()
-@click.option('--debug', '-d', 'debug', default=False)
+@click.option('--debug', '-d', 'debug', default=False,
+            description="Activate debugging flag")
 def run(debug):
     if debug:
         logger.setLevel(logging.getLevelName('DEBUG'))
+        logger.info('Debugging Enabled')
 
 
 @run.command()
-@click.option('--file', '-f', 'fileIn', default="")
-@click.option('--out-dir', '-o', 'outDir', default="")
+@click.option('--file', '-f', 'fileIn', default="",
+            description="Input image-PDF file")
+@click.option('--out-dir', '-o', 'outDir', default="",
+            description="Root directory for temp directory")
 def extract(fileIn, outDir):
+    """
+    EXTRACT
+    Extract PDF files to PNG images
+    """
     dirPath = os.path.dirname(os.path.realpath(__file__))
     filePath = os.path.join(dirPath, fileIn)
     if outDir == "":
         outDir = os.getcwd()
-    with pgt.pdf2png(config, filePath, outDir=outDir, cleanUp=False) as (taskid, path):
+
+    with pgt.pdf2png(config, filePath, outDir, cleanUp=False) as (taskid, path):
         logger.info('Extracted PDF file to directory:/n %s', path)
         sys.stdout.write(path)
 
 
 @run.command()
-@click.option('--dir', 'directory', default="")
+@click.option('--dir', '-d', 'directory', default="",
+            description="Directory with image files")
 def ocr(directory):
+    """
+    OCR
+    Parse directory with PNG images by OCR processing
+    and output resulting text.
+    """
     dir_path = os.path.dirname(os.path.realpath(__file__))
     work_path = os.path.join(dir_path, directory)
 
