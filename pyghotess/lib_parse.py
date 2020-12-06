@@ -110,7 +110,7 @@ async def process(payloads, config={}, language='fra'):
 
     logger.debug('Creating tasks')
     tasks = []
-    for i in range(cfg['workers']):
+    for i in range(int(cfg['workers'])):
         task = asyncio.create_task(worker(
             f'w-{i}',
             cfg,
