@@ -1,3 +1,16 @@
+#  Pyghotess, fast image-PDF OCR Processing
+#     Copyright (C) 2020    Pieterjan Montens
+#     This program is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#     This program is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+#     You should have received a copy of the GNU General Public License
+#     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
 import os
 import uuid
 import asyncio
@@ -7,6 +20,8 @@ import subprocess
 from contextlib import contextmanager
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.getLevelName('INFO'))
+logger.addHandler(logging.StreamHandler())
 
 
 def outputParse(listIn):
@@ -32,16 +47,19 @@ def pdf2png(config, filePath, outDir=False, *, cleanUp=True):
     tempPath = os.path.join(outDir, taskid)
     os.mkdir(tempPath)
 
-    subprocess.run([
+    cfg = config.get('extract', {'resolution': 200, 'alphaBits': 4})
+    logger.info('pdf2png: %s', cfg)
+    cmd = [
         'gs',
         '-q',
         '-sDEVICE=png16m',
-        '-dTextAlphaBits=4',
+        f'-dTextAlphaBits={cfg["alphaBits"]}',
         f'-o{tempPath}/gs-%02d.png',
         '-dNOPAUSE',
-        '-r200',
-        filePath]
-    )
+        f'-r{cfg["resolution"]}',
+        filePath,
+    ]
+    subprocess.run(cmd)
 
     try:
         yield (taskid, tempPath)
@@ -51,41 +69,55 @@ def pdf2png(config, filePath, outDir=False, *, cleanUp=True):
             shutil.rmtree(tempPath)
 
 
-async def worker(name, queue_in, queue_out):
+async def worker(name, cfg, language, queue_in, queue_out):
     while True:
-        order, fpath = await queue_in.get()
-        logger.debug('Worker %s starting on file %s', name, order)
-        cmd = [
-            'tesseract',
-            '--psm','4',
-            '-l', 'fra',
-            '--dpi', '200',
-            fpath,
-            'stdout',
-        ]
-        await asyncio.sleep(1)
+        try:
+            order, fpath = await queue_in.get()
+            logger.info('Worker %s starting on file %s', name, order)
+            logger.debug(cfg)
 
-        proc = await asyncio.create_subprocess_shell(
+            cmd = [
+                'tesseract',
+                '--psm', str(cfg['psm']),
+                '-l', language,
+                '--dpi', str(cfg['resolution']),
+                fpath,
+                'stdout',
+            ]
+            await asyncio.sleep(.1)
+
+            proc = await asyncio.create_subprocess_shell(
                 ' '.join(cmd),
                 stdout=asyncio.subprocess.PIPE)
-        # result = subprocess.run(cmd, stdout=subprocess.PIPE)
-        stdout, _ = await proc.communicate()
-        queue_out.put_nowait((order, stdout.decode()))
-        queue_in.task_done()
+            # result = subprocess.run(cmd, stdout=subprocess.PIPE)
+            stdout, _ = await proc.communicate()
+            queue_out.put_nowait((order, stdout.decode()))
+            queue_in.task_done()
+        except Exception as e:
+            logger.exception(e)
 
 
-async def process(payloads):
+async def process(payloads, config={}, language='fra'):
     queue_in = asyncio.Queue()
     queue_out = asyncio.Queue()
 
     logger.debug('Filling queue in')
+    cfg = config.get('ocr', {'psm': 4, 'dpi': 200, 'workers': 2})
+
+    logger.info('process: %s', cfg)
     for payload in payloads:
         queue_in.put_nowait(payload)
 
     logger.debug('Creating tasks')
     tasks = []
-    for i in range(8):
-        task = asyncio.create_task(worker(f'w-{i}', queue_in, queue_out))
+    for i in range(cfg['workers']):
+        task = asyncio.create_task(worker(
+            f'w-{i}',
+            cfg,
+            language,
+            queue_in,
+            queue_out
+        ))
         tasks.append(task)
 
     logger.debug('Waiting job execution')

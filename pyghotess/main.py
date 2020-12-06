@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+#  Pyghotess, fast image-PDF OCR Processing
+#     Copyright (C) 2020    Pieterjan Montens
+#     This program is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#     This program is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+#     You should have received a copy of the GNU General Public License
+#     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
 import logging
 import shutil
 import os
@@ -30,6 +43,15 @@ config = {
     'proxy_prefix': os.getenv('PROXY_PREFIX', ''),
     'log_level': 'info',
     'access_key': os.getenv('ACCESS_KEY', False),
+    'extract': {
+        'resolution': os.getenv('RESOLUTION', 200),
+        'alphaBits': 4,
+    },
+    'ocr': {
+        'resolution': os.getenv('RESOLUTION', 200),
+        'workers': os.getenv('WORKERS', 2),
+        'psm': 4
+    }
 }
 
 
@@ -74,7 +96,7 @@ async def process(rawFile: UploadFile = File(...)):
                 fpath = os.path.join(path, fname)
                 payload.append((order, fpath))
 
-            result = await lp.process(payload)
+            result = await lp.process(payload, config)
             text = lp.outputParse(result)
 
     return PlainTextResponse(text)

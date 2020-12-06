@@ -13,6 +13,7 @@ It is only applicable to PDF files though.
 
 ## Other ideas
 - Streaming of output : get first pages while other pages are still processed
+- Per-page configuration
 
 ## Usage
 Can be used with **poetry**, **docker** CLI or as **API** (Poetry or Docker).
