@@ -16,7 +16,9 @@ import uuid
 import asyncio
 import logging
 import shutil
+import math
 import subprocess
+import multiprocessing
 from contextlib import contextmanager
 
 logger = logging.getLogger(__name__)
@@ -81,6 +83,7 @@ async def worker(name, cfg, language, queue_in, queue_out):
                 '--psm', str(cfg['psm']),
                 '-l', language,
                 '--dpi', str(cfg['resolution']),
+                '--oem', '1',
                 fpath,
                 'stdout',
             ]
@@ -110,7 +113,12 @@ async def process(payloads, config={}, language='fra'):
 
     logger.debug('Creating tasks')
     tasks = []
-    for i in range(int(cfg['workers'])):
+    if cfg['workers'] == 'auto':
+        workers = int(math.ceil(multiprocessing.cpu_count() / 4))
+    else:
+        workers = int(cfg['workers'])
+
+    for i in range(workers):
         task = asyncio.create_task(worker(
             f'w-{i}',
             cfg,

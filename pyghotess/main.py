@@ -56,7 +56,7 @@ config = {
 
 
 COUNTER = 0
-VERSION = 2
+VERSION = 3
 START_TIME = lm.starttime_get()
 
 # ################################################################## APP CONFIG

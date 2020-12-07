@@ -17,6 +17,8 @@ import click
 import sys
 import logging
 import os
+import time
+import math
 import asyncio
 import pyghotess as pgt
 
@@ -25,6 +27,15 @@ logger.setLevel(logging.getLevelName('INFO'))
 logger.addHandler(logging.StreamHandler())
 
 config = {
+    'extract': {
+        'resolution': os.getenv('RESOLUTION', 200),
+        'alphaBits': 4,
+    },
+    'ocr': {
+        'resolution': os.getenv('RESOLUTION', 200),
+        'workers': os.getenv('WORKERS', 2),
+        'psm': 4
+    }
 }
 
 
@@ -76,7 +87,7 @@ def ocr(directory):
         payload.append((order, fpath))
 
     loop = asyncio.get_event_loop()
-    [result] = loop.run_until_complete(asyncio.gather(pgt.process(payload)))
+    [result] = loop.run_until_complete(asyncio.gather(pgt.process(payload, config)))
     sys.stdout.write(pgt.outputParse(result))
 
 
@@ -103,9 +114,71 @@ def process(fileIn):
             payload.append((order, fpath))
 
         loop = asyncio.get_event_loop()
-        [result] = loop.run_until_complete(asyncio.gather(pgt.process(payload)))
+        [result] = loop.run_until_complete(asyncio.gather(pgt.process(payload, config)))
 
     sys.stdout.write(pgt.outputParse(result))
+
+
+@run.command()
+def benchmark():
+    """
+    Run a quick platform benchmark
+    """
+    dirPath = os.path.dirname(os.path.realpath(__file__))
+    filePath = os.path.join(dirPath, './resources/test_fr_7_img.pdf')
+    outDir = os.getcwd()
+    Score = lambda x: math.floor(7 / (time.time() - x) * 100)
+
+    starttime = time.time()
+    config['ocr']['workers'] = 1
+    with pgt.pdf2png(config, filePath, outDir) as (taskid, path):
+        payload = []
+        for fname in os.listdir(path):
+            order = int(fname[3:5])
+            fpath = os.path.join(path, fname)
+            payload.append((order, fpath))
+
+        loop = asyncio.get_event_loop()
+        [result] = loop.run_until_complete(asyncio.gather(pgt.process(payload, config)))
+
+    worker1_time = Score(starttime)
+
+    starttime = time.time()
+    config['ocr']['workers'] = 2
+    with pgt.pdf2png(config, filePath, outDir) as (taskid, path):
+        payload = []
+        for fname in os.listdir(path):
+            order = int(fname[3:5])
+            fpath = os.path.join(path, fname)
+            payload.append((order, fpath))
+
+        loop = asyncio.get_event_loop()
+        [result] = loop.run_until_complete(asyncio.gather(pgt.process(payload, config)))
+
+    worker2_time = Score(starttime)
+
+    starttime = time.time()
+    config['ocr']['workers'] = 'auto'
+    with pgt.pdf2png(config, filePath, outDir) as (taskid, path):
+        payload = []
+        for fname in os.listdir(path):
+            order = int(fname[3:5])
+            fpath = os.path.join(path, fname)
+            payload.append((order, fpath))
+
+        loop = asyncio.get_event_loop()
+        [result] = loop.run_until_complete(asyncio.gather(pgt.process(payload, config)))
+
+    workera_time = Score(starttime)
+
+    sys.stdout.write(f"""
+    1 Worker score : {worker1_time}
+    2 Worker score : {worker2_time}
+    Auto Worker score : {workera_time}
+
+    Final: {int((worker1_time + worker2_time + workera_time)/3)}
+    """)
+    # print(worker3_time)
 
 
 if __name__ == "__main__":
