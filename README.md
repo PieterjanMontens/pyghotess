@@ -1,19 +1,23 @@
 # pyghotess
 Python / Ghostscript / Tesseract fast image PDF OCR processing
 
+## Description
 This component allows more fine-tuning, control and parallelisation of Tesseract OCR processing then other available solutions (apache Tika for example).
 It is only applicable to PDF files though.
 
-## Advantages
+### Advantages
 - Configure the parameters to the task at hand : is the original material of good quality ? Is the orientation bad ? The resolution ?
 - Distribute the OCR processing over multiple CPU's
 
-## Disadvantage
+### Disadvantage
 - Less flexible: only works with PDF files
 
-## Other ideas
+### Other ideas
 - Streaming of output : get first pages while other pages are still processed
 - Per-page configuration
+
+## Installation
+[to write]
 
 ## Usage
 Can be used with **poetry**, **docker** CLI or as **API** (Poetry or Docker).
@@ -41,3 +45,10 @@ Commands:
 $ poetry run ./run.py process -f test2.pdf
 ```
 
+## Contributing
+[to write]
+### Testing
+Pyghotess uses behave BDD testing. Features and steps are specified in the `tests/behave` folder and can be run this way:
+```bash
+$ poetry run behave tests/behave
+```
