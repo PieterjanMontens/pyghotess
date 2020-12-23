@@ -19,7 +19,17 @@ import argparse
 import uvicorn
 import toml
 import tempfile
-from fastapi import Depends, FastAPI, HTTPException, File, UploadFile
+import json
+from fastapi import (
+    Depends,
+    FastAPI,
+    HTTPException,
+    File,
+    UploadFile,
+    WebSocket,
+    WebSocketDisconnect,
+)
+from typing import List
 from fastapi.responses import PlainTextResponse
 from starlette.middleware.cors import CORSMiddleware
 import pyghotess.lib_misc as lm
@@ -73,6 +83,28 @@ app.add_middleware(
 )
 
 
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def send_personal_message(self, message: str, websocket: WebSocket):
+        await websocket.send_text(message)
+
+    async def broadcast(self, message: str):
+        for connection in self.active_connections:
+            await connection.send_text(message)
+
+
+manager = ConnectionManager()
+
+
 # ############################################################### SERVER ROUTES
 # #############################################################################
 @app.get("/")
@@ -100,6 +132,42 @@ async def process(rawFile: UploadFile = File(...)):
             text = lp.outputParse(result)
 
     return PlainTextResponse(text)
+
+
+@app.websocket("/ws")
+async def websocket_endpoint(ws: WebSocket):
+    status = {}
+    await manager.connect(ws)
+    try:
+        while True:
+            data = await ws.receive_json()
+            if data['action'] == 'test':
+                await ws.send_json(data)
+            if data['action'] == 'get_file_status':
+                await ws.send_json({
+                    'action': 'get_file_status',
+                    'payload': status['file']['status']
+                })
+            if data['action'] == 'upload':
+                tFile = tempfile.NamedTemporaryFile()
+                status['file'] = {
+                    'status': 'uploading',
+                    'file': tFile
+                }
+                logger.debug('ready to receive bytes')
+                await ws.send_json({'action': 'upload'})
+                while True:
+                    rawBytes = await ws.receive_bytes()
+                    if len(rawBytes) == 0:
+                        logger.info("File received")
+                        break
+                    tFile.write(rawBytes)
+                    logger.debug("Wrote %s bytes", len(rawBytes))
+                status['file']['status'] = 'uploaded'
+
+    except WebSocketDisconnect:
+        manager.disconnect(ws)
+        logger.debug("Disconnecting")
 
 
 # ##################################################################### STARTUP

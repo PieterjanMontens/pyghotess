@@ -12,6 +12,7 @@ fastapi = "^0.62.0"
 uvicorn = "^0.12.3"
 pytz = "^2020.4"
 python-multipart = "^0.0.5"
+websockets = "^8.1"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^3.8.4"
@@ -19,6 +20,7 @@ pylint = "^2.6.0"
 behave = "^1.2.6"
 isort = "^5.6.4"
 requests = "^2.25.0"
+websocket_client = "^0.57.0"
 
 [tool.poetry.scripts]
 api = "pyghotess.main:main"
