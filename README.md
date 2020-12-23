@@ -17,7 +17,22 @@ It is only applicable to PDF files though.
 - Per-page configuration
 
 ## Installation
-[to write]
+From the root directory of in your local copy (after cloning the repository):
+```bash
+# poetry
+> poetry install
+```
+### Poetry installation
+Poetry installs a local, isolated python environment, to avoid conflicts with your system's python modules. See [here](https://python-poetry.org/docs/).
+
+A recent [python](https://www.python.org/downloads/) version (>=3.7) will also be needed.
+
+## Usage
+```bash
+# Run locally in debug mode
+> poetry run api --debug
+
+```
 
 ## Usage
 Can be used with **poetry**, **docker** CLI or as **API** (Poetry or Docker).
@@ -46,7 +61,14 @@ $ poetry run ./run.py process -f test2.pdf
 ```
 
 ## Contributing
-[to write]
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+
+Please make sure to update tests as appropriate.
+
+### Todo:
+- Finish streaming OCR results with the websocket
+- Shorten TTFR (Time To First Result) even more
+
 ### Testing
 Pyghotess uses behave BDD testing. Features and steps are specified in the `tests/behave` folder and can be run this way:
 ```bash
