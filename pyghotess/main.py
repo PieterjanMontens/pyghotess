@@ -149,42 +149,42 @@ async def websocket_endpoint(ws: WebSocket):
                     'payload': status['file']['status']
                 })
             if data['action'] == 'upload':
-                tFile = tempfile.NamedTemporaryFile()
-                status['file'] = {
-                    'status': 'uploading',
-                    'file': tFile
-                }
-                logger.debug('ready to receive bytes')
-                await ws.send_json({'action': 'upload'})
-                while True:
-                    rawBytes = await ws.receive_bytes()
-                    tFile.write(rawBytes)
-                    if len(rawBytes) == 0:
-                        logger.info("File received")
-                        break
-                    logger.debug("Wrote %s bytes", len(rawBytes))
-                tFile.seek(0)
-                status['file']['status'] = 'uploaded'
+                with tempfile.NamedTemporaryFile() as tFile:
+                    status['file'] = {
+                        'status': 'uploading',
+                        'file': tFile
+                    }
+                    logger.debug('ready to receive bytes')
+                    await ws.send_json({'action': 'upload'})
+                    while True:
+                        rawBytes = await ws.receive_bytes()
+                        tFile.write(rawBytes)
+                        if len(rawBytes) == 0:
+                            logger.info("File received")
+                            break
+                        logger.debug("Wrote %s bytes", len(rawBytes))
+                    tFile.seek(0)
+                    status['file']['status'] = 'uploaded'
 
-                async def fun(order, text):
-                    print(f'sending text {order} to ws')
-                    await ws.send_json({
-                        'action': 'page_extract',
-                        'meta': {'page': order},
-                        'payload': text,
-                    })
+                    async def fun(order, text):
+                        logger.debug(f'sending text {order} to ws')
+                        await ws.send_json({
+                            'action': 'page_extract',
+                            'meta': {'page': order},
+                            'payload': text,
+                        })
 
-                with lp.pdf2png(config, tFile.name) as (taskid, path):
-                    payload = []
-                    for fname in os.listdir(path):
-                        order = int(fname[3:5])
-                        fpath = os.path.join(path, fname)
-                        payload.append((order, fpath))
+                    with lp.pdf2png(config, tFile.name) as (taskid, path):
+                        payload = []
+                        for fname in os.listdir(path):
+                            order = int(fname[3:5])
+                            fpath = os.path.join(path, fname)
+                            payload.append((order, fpath))
+                        payload.sort(key=lambda x: x[0])
 
-                    status['file']['status'] = 'OCR processing'
-                    await lp.processWithGatherer(payload, config, fun)
+                        status['file']['status'] = 'OCR processing'
+                        await lp.processWithGatherer(payload, config, fun)
 
-                tFile.close()
                 await ws.send_json({'action': 'done'})
 
     except WebSocketDisconnect:
