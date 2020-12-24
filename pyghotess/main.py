@@ -158,12 +158,34 @@ async def websocket_endpoint(ws: WebSocket):
                 await ws.send_json({'action': 'upload'})
                 while True:
                     rawBytes = await ws.receive_bytes()
+                    tFile.write(rawBytes)
                     if len(rawBytes) == 0:
                         logger.info("File received")
                         break
-                    tFile.write(rawBytes)
                     logger.debug("Wrote %s bytes", len(rawBytes))
+                tFile.seek(0)
                 status['file']['status'] = 'uploaded'
+
+                async def fun(order, text):
+                    print(f'sending text {order} to ws')
+                    await ws.send_json({
+                        'action': 'page_extract',
+                        'meta': {'page': order},
+                        'payload': text,
+                    })
+
+                with lp.pdf2png(config, tFile.name) as (taskid, path):
+                    payload = []
+                    for fname in os.listdir(path):
+                        order = int(fname[3:5])
+                        fpath = os.path.join(path, fname)
+                        payload.append((order, fpath))
+
+                    status['file']['status'] = 'OCR processing'
+                    await lp.processWithGatherer(payload, config, fun)
+
+                tFile.close()
+                await ws.send_json({'action': 'done'})
 
     except WebSocketDisconnect:
         manager.disconnect(ws)

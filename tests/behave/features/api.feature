@@ -13,7 +13,8 @@ Feature: Doc OCR
         When I close the connection
           Then the connection is closed
 
-    Scenario: I can send a file to the websocket
+    Scenario: I can OCR a file with the websocket
       Given a connection to the websocket
         When I send a test file
-          Then I can query the file status
+        And I wait for the results
+          Then I receive all 7 pages

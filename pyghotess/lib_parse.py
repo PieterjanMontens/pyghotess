@@ -153,3 +153,52 @@ async def process(payloads, config={}, language='fra'):
     return resp
 
 
+async def processWithGatherer(payloads, config, gatherer, language='fra'):
+    queue_in = asyncio.Queue()
+    queue_out = asyncio.Queue()
+
+    async def gth(queue_gath):
+        while True:
+            try:
+                order, test = await queue_gath.get()
+                logger.debug('Gatherer received %s', order)
+                await gatherer(order, test)
+                queue_gath.task_done()
+            except Exception as e:
+                logger.exception(e)
+
+    logger.debug('Filling queue in')
+    cfg = config.get('ocr', {'psm': 4, 'dpi': 200, 'workers': 2})
+
+    logger.info('process: %s', cfg)
+    for payload in payloads:
+        queue_in.put_nowait(payload)
+
+    logger.debug('Creating tasks')
+    tasks = []
+    if cfg['workers'] == 'auto':
+        workers = int(math.ceil(multiprocessing.cpu_count() / 4))
+    else:
+        workers = int(cfg['workers'])
+
+    for i in range(workers):
+        task = asyncio.create_task(worker(
+            f'w-{i}',
+            cfg,
+            language,
+            queue_in,
+            queue_out
+        ))
+        tasks.append(task)
+
+    gath_job = asyncio.create_task(gth(queue_out))
+    tasks.append(gath_job)
+
+    logger.debug('Waiting job execution')
+    await queue_in.join()
+    logger.debug('Job done, ending workers')
+
+    for task in tasks:
+        task.cancel()
+    # Wait until all worker tasks are cancelled.
+    await asyncio.gather(*tasks, return_exceptions=True)

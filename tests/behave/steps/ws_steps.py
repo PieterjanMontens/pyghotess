@@ -48,7 +48,7 @@ def step_impl(context):
 
     i = 1
     with open(fpath, 'rb') as f:
-        while chunk := f.read(4096):
+        while chunk := f.read(1024 * 1024):
             print(f'sending chunk {i}')
             context.ws.send_binary(chunk)
             i += 1
@@ -57,10 +57,34 @@ def step_impl(context):
 
 @then(u'I can query the file status')
 def step_impl(context):
-    context.ws.send(json.dumps({
-        'action': 'get_file_status',
-    }))
+    context.ws.send(json.dumps({'action': 'get_file_status'}))
     result = json.loads(context.ws.recv())
     print(result)
     assert result['action'] == 'get_file_status'
     assert result['payload'] == 'uploaded'
+
+
+@when(u'I wait for the results')
+def step_impl(context):
+    context.received = 0
+    context.pages = []
+    while True:
+        result = json.loads(context.ws.recv())
+        if result['action'] == 'done':
+            break
+        if result['action'] == 'get_file_status':
+            print(f"status is {result['payload']}")
+            continue
+        context.received += 1
+        assert result['action'] == 'page_extract'
+        assert result['meta']['page']
+        print(f"received page {result['meta']['page']} (received {context.received})")
+        context.pages.append(result['payload'])
+        context.ws.send(json.dumps({'action': 'get_file_status'}))
+
+
+@then(u'I receive all 7 pages')
+def step_impl(context):
+    print(context.received)
+    print(context.pages)
+    assert context.received == 7
