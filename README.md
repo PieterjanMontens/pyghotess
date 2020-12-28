@@ -28,16 +28,9 @@ Poetry installs a local, isolated python environment, to avoid conflicts with yo
 A recent [python](https://www.python.org/downloads/) version (>=3.7) will also be needed.
 
 ## Usage
-```bash
-# Run locally in debug mode
-> poetry run api --debug
-
-```
-
-## Usage
 Can be used with **poetry**, **docker** CLI or as **API** (Poetry or Docker).
 
-CLI usage
+### CLI usage
 ```bash
 Usage: run.py [OPTIONS] COMMAND [ARGS]...
 
@@ -60,6 +53,14 @@ Commands:
 $ poetry run ./run.py process -f test2.pdf
 ```
 
+### API Usage
+By default, the API binds to port 5501 (settings are set by environment variables or by using a config file, see `config_default.toml`)
+```bash
+# Run locally in debug mode
+> poetry run api --debug
+# Run locally with config file
+> poetry run api --config config.toml
+```
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 

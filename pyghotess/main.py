@@ -46,7 +46,7 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 config = {
     'server': {
         'host': os.getenv('HOST', '127.0.0.1'),
-        'port': int(os.getenv('PORT', '5000')),
+        'port': int(os.getenv('PORT', '5501')),
         'log_level': os.getenv('LOG_LEVEL', 'info'),
         'timeout_keep_alive': 0,
     },
