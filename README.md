@@ -66,6 +66,20 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 
 Please make sure to update tests as appropriate.
 
+## Updating docker
+The `docker_tool.sh` script allows for reasy updating of docker hub images. Update with your own repo settings if needed.
+
+```
+# Build
+$ ./docker_tool.sh build [VERSION]
+# Test
+$ ./docker_tool.sh test [VERSION]
+# Publish
+$ ./docker_tool.sh publish [VERSION]
+# Tag latest version
+$ ./docker_tool.sh latest [VERSION]
+```
+
 ### Todo:
 - Finish streaming OCR results with the websocket
 - Shorten TTFR (Time To First Result) even more

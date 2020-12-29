@@ -5,9 +5,10 @@ while getopts ":h" opt; do
       echo "Usage:"
       echo "    docker-tool.sh -h        Display this help message."
       echo "    docker-tool.sh build <VERSION>    Builds image"
-      echo "    docker-tool.sh test  <VERSION>    Tests image"
+      echo "    docker-tool.sh test <VERSION>    Tests image"
       echo "    docker-tool.sh publish <VERSION>  Publishes image to Docker Hub"
-      echo "    docker-tool.sh latest  <VERSION>  Tags images as latest on Docker Hub."
+      echo "    docker-tool.sh latest <VERSION>  Tags images as latest on Docker Hub."
+      echo "    docker-tool.sh run <VERSION>  Run the image locally"
       exit 0
       ;;
    \? )
@@ -66,6 +67,11 @@ case "$subcommand" in
     docker push berzemus/pyghotess:latest-api
     # docker tag berzemus/pyghotess:${version}-cli berzemus/pyghotess:latest-ocr
     # docker push berzemus/pyghotess:latest-ocr
+    ;;
+
+  run)
+    # Run the image
+    docker run -it --rm -p 6006:6006 berzemus/pyghotess:${version}-api
     ;;
 
 esac
