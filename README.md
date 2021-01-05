@@ -1,20 +1,25 @@
 # pyghotess
-Python / Ghostscript / Tesseract fast image PDF OCR processing
+Python / Ghostscript / Tesseract for fast multi-threaded customizable image PDF OCR processing with real-time page-per-page result feed.
 
 ## Description
 This component allows more fine-tuning, control and parallelisation of Tesseract OCR processing then other available solutions (apache Tika for example).
 It is only applicable to PDF files though.
+
+- Ghostscript for fast & precise page image extraction
+- Tesseract for high-quality image OCR processing
+- Python for gluing it together and provide a nice asynchronous web interface (Rest or websocket API)
 
 ### Advantages
 - Configure the parameters to the task at hand : is the original material of good quality ? Is the orientation bad ? The resolution ?
 - Distribute the OCR processing over multiple CPU's
 
 ### Disadvantage
-- Less flexible: only works with PDF files
+- Less flexible: only works with image-PDF files
 
 ### Other ideas
-- Streaming of output : get first pages while other pages are still processed
 - Per-page configuration
+- Faster first-page result (TTFR: time-to-first-result)
+- Improve and parallelize first step (ghostscript image creation)
 
 ## Installation
 From the root directory of in your local copy (after cloning the repository):
@@ -61,6 +66,10 @@ By default, the API binds to port 5501 (settings are set by environment variable
 # Run locally with config file
 > poetry run api --config config.toml
 ```
+
+### Websocket usage
+Doc to be done, see `/tests/behave/steps/ws_steps.py` for an example implentation.
+
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
@@ -80,9 +89,6 @@ $ ./docker_tool.sh publish [VERSION]
 $ ./docker_tool.sh latest [VERSION]
 ```
 
-### Todo:
-- Finish streaming OCR results with the websocket
-- Shorten TTFR (Time To First Result) even more
 
 ### Testing
 Pyghotess uses behave BDD testing. Features and steps are specified in the `tests/behave` folder and can be run this way:
